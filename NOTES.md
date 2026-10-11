@@ -1,5 +1,22 @@
 # Collector notes — per source
 
+## Validation status (updated 2026-10-10)
+
+| source | SERP/query half | page-body half |
+|---|---|---|
+| news | **validated against a real page** — live capture, `"Battelle" news`, 2026-10-10 | fixture-only, unvalidated (no unlocker zone) |
+| executives | **validated against a real page** — live capture, `"Bath & Body Works" ...`, 2026-10-10 | fixture-only, unvalidated (authored PR page) |
+| jobs | **validated against a real page** — live capture, `Battelle careers open positions`, 2026-10-10 | fixture-only, unvalidated (authored careers page) |
+| registry | n/a | fixture-only, unvalidated (no unlocker zone) |
+| court | n/a | fixture-only, unvalidated (no unlocker zone) |
+| regulator | n/a | fixture-only, unvalidated (no unlocker zone) |
+| layoffs | n/a | fixture-only, unvalidated (no unlocker zone) |
+| domain | n/a | fixture-only, unvalidated (no unlocker zone) |
+
+`brightdata zones` as of 2026-10-10 still lists only `serp_api1` — no Web
+Unlocker zone. Live-call log: 2 calls spent on the executives recapture
+(first returned HTTP 200 with a 0-byte body — transient; retry succeeded).
+
 Shared context:
 
 - **Fetch layer.** `src/fetcher/live.ts` posts to
@@ -88,14 +105,35 @@ Shared context:
 
 - Query: `"<name>" appoints OR names OR joins OR departs CEO OR CFO OR president`.
 - Move extraction runs on the **title first**, then title+description —
-  person/role regexes bleed across the boundary otherwise (a "Departure of
-  COO Marcus Hall" title followed by "Nordvale Materials..." once produced
-  `marcus-hall-nordvale-materials`). Departure patterns are tried before
-  appointment ones.
+  person/role regexes bleed across the boundary otherwise. Departure
+  patterns are tried before appointment ones.
 - `key = move:<person-slug>:<role-slug>:<yyyy-mm-dd|undated>`. Date comes
   from the SERP `date` field; `undated` keeps the key stable when absent.
 - The top matching link is unlocked once for the press-release body; a
   failure there is non-fatal (SERP row is still the record).
+
+### Bugs found by validating against a real SERP (2026-10-10)
+
+The hand-authored fixture was flattering; the real Bath & Body Works SERP
+broke the extractor three ways:
+
+1. **"Appoints X as Y" uncovered.** The dominant press-release phrasing
+   ("Bath & Body Works Appoints Daniel Heaf as Chief Executive Officer" —
+   the actual primary press release) matched no pattern; only `names?` was
+   handled. Now `(?:names?|appoints?|taps?)`.
+2. **PERSON swallowed connectives.** Under `/i`, `[A-Z]` matches lowercase,
+   so "Appoints Daniel Heaf **as** ..." captured person `"Daniel Heaf as"`,
+   and "Appoints Insider as Interim CFO" produced `"Insider as Interim"`.
+   PERSON's first letters are now case-locked with `(?-i:[A-Z])`.
+3. **Same move, two keys.** "Chief Executive Officer" and "CEO" minted
+   different move keys for the identical fact across outlets. Role is now
+   canonicalized for the key (`chief <x> officer` → `c?o` acronym); the raw
+   title stays in the item's `role` field. Result on the real SERP: four
+   outlets collapse to `move:daniel-heaf:ceo:undated`.
+4. Also hardened: the departure pattern's role group is now required —
+   "X steps down" with no role crashed on `undefined.trim()` and poisoned
+   the whole envelope; and `resigned`/`stepped down`/`has`/`will` variants
+   are covered.
 
 ## jobs — SERP → careers page
 

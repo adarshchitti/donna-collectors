@@ -16,12 +16,19 @@ import { hostname } from '../url.js';
  */
 const ROLE =
   '(chief\\s+[a-z]+\\s+officer|CEO|CFO|COO|CTO|CIO|CMO|president|vice\\s+president|general\\s+counsel|treasurer|controller)';
-const PERSON = "([A-Z][\\w.'-]+(?:\\s+[A-Z][\\w.'-]+){1,3})";
+// Each word must start with a REAL uppercase letter — under the /i flag a
+// bare [A-Z] matches lowercase too, which let connectives like "as" get
+// swallowed into person names on real headlines ("Daniel Heaf as").
+const PERSON = "((?-i:[A-Z])[\\w.'-]+(?:\\s+(?-i:[A-Z])[\\w.'-]+){1,3})";
 
 const PATTERNS: { kind: 'departure' | 'appointment'; re: RegExp; personIdx: number; roleIdx: number }[] = [
   { kind: 'departure', re: new RegExp(`departure of\\s+${ROLE}[,\\s]+${PERSON}`, 'i'), personIdx: 2, roleIdx: 1 },
-  { kind: 'departure', re: new RegExp(`${PERSON}\\s+(?:will\\s+)?(?:departs?|resigns?|steps\\s+down)(?:\\s+as)?\\s*${ROLE}?`, 'i'), personIdx: 1, roleIdx: 2 },
-  { kind: 'appointment', re: new RegExp(`names?\\s+${PERSON}\\s+(?:as\\s+|its\\s+|new\\s+)*${ROLE}`, 'i'), personIdx: 1, roleIdx: 2 },
+  // role is REQUIRED here: "X steps down" with no role produces a garbage
+  // person (the person group swallows company words) and an empty role
+  { kind: 'departure', re: new RegExp(`${PERSON}\\s+(?:(?:will|has|had|to)\\s+)?(?:departs?|departed|resigns?|resigned|steps?\\s+down|stepped\\s+down)(?:\\s+as)?\\s*${ROLE}`, 'i'), personIdx: 1, roleIdx: 2 },
+  // "Appoints Daniel Heaf as CEO" is the dominant press-release phrasing and
+  // must be covered alongside "Names X Y" (verified against a real SERP)
+  { kind: 'appointment', re: new RegExp(`(?:names?|appoints?|taps?)\\s+${PERSON}\\s+(?:as\\s+|its\\s+|new\\s+|to\\s+)*${ROLE}`, 'i'), personIdx: 1, roleIdx: 2 },
   { kind: 'appointment', re: new RegExp(`${PERSON}\\s+joins\\s+[\\w\\s.,-]+?\\s+as\\s+${ROLE}`, 'i'), personIdx: 1, roleIdx: 2 },
   { kind: 'appointment', re: new RegExp(`appointment of\\s+${PERSON}\\s+as\\s+${ROLE}`, 'i'), personIdx: 1, roleIdx: 2 },
   { kind: 'appointment', re: new RegExp(`${PERSON}\\s+(?:named|appointed)\\s+(?:as\\s+|its\\s+|new\\s+)*${ROLE}`, 'i'), personIdx: 1, roleIdx: 2 },
@@ -35,6 +42,23 @@ function normDate(raw?: string): string {
   if (!raw) return 'undated';
   const t = Date.parse(raw);
   return Number.isNaN(t) ? 'undated' : new Date(t).toISOString().slice(0, 10);
+}
+
+/**
+ * Canonical role for the KEY only — "Chief Executive Officer" and "CEO" are
+ * the same record, and two outlets writing the same move must produce one
+ * key. The raw title is kept in the item's `role` field.
+ */
+const ROLE_ALIASES: Record<string, string> = {
+  'chief executive officer': 'ceo',
+  'chief financial officer': 'cfo',
+  'chief operating officer': 'coo',
+  'chief technology officer': 'cto',
+  'chief information officer': 'cio',
+  'chief marketing officer': 'cmo',
+};
+function roleKey(role: string): string {
+  return slug(ROLE_ALIASES[role.toLowerCase()] ?? role);
 }
 
 export const collect: Collector = async (company, deps) => {
@@ -57,8 +81,10 @@ export const collect: Collector = async (company, deps) => {
       for (const text of [r.title, `${r.title} ${r.description}`]) {
         for (const p of PATTERNS) {
           const m = p.re.exec(text);
-          if (m) {
-            move = { person: m[p.personIdx]!.trim(), role: m[p.roleIdx]!.trim(), kind: p.kind };
+          const person = m?.[p.personIdx]?.trim();
+          const role = m?.[p.roleIdx]?.trim();
+          if (person && role) {
+            move = { person, role, kind: p.kind };
             break;
           }
         }
@@ -67,7 +93,7 @@ export const collect: Collector = async (company, deps) => {
       if (!move) continue;
 
       const date = normDate(r.date);
-      const key = `move:${slug(move.person)}:${slug(move.role)}:${date}`;
+      const key = `move:${slug(move.person)}:${roleKey(move.role)}:${date}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
