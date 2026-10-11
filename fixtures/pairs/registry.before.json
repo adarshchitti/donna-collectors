@@ -1,0 +1,61 @@
+{
+  "company_id": "big-lots-001",
+  "source": "registry",
+  "fetched_at": "2026-10-03T12:00:00Z",
+  "run_id": "snap-registry-before",
+  "ok": true,
+  "error": null,
+  "items": [
+    {
+      "key": "status:current",
+      "type": "status",
+      "status": "Active",
+      "value": "Active"
+    },
+    {
+      "key": "address:registered",
+      "type": "address",
+      "address": "300 Phillipi Road, Columbus, OH 43228",
+      "value": "300 Phillipi Road, Columbus, OH 43228",
+      "agent": "Corporation Service Company"
+    },
+    {
+      "key": "officer:bruce-thorn:president-ceo",
+      "type": "officer",
+      "name": "Bruce Thorn",
+      "role": "President & CEO",
+      "since": "2018-10-01"
+    },
+    {
+      "key": "officer:jonathan-ramsden:cfo",
+      "type": "officer",
+      "name": "Jonathan Ramsden",
+      "role": "CFO",
+      "since": "2020-06-15"
+    },
+    {
+      "key": "officer:lisa-bachmann:evp",
+      "type": "officer",
+      "name": "Lisa Bachmann",
+      "role": "EVP",
+      "since": "2019-03-01"
+    },
+    {
+      "key": "filing:11890012",
+      "type": "filing",
+      "filing_id": "11890012",
+      "filing_type": "Annual Report",
+      "date": "2026-04-01"
+    },
+    {
+      "key": "filing:11887765",
+      "type": "filing",
+      "filing_id": "11887765",
+      "filing_type": "Statement of Continued Existence",
+      "date": "2023-05-20"
+    }
+  ],
+  "raw_excerpt": "Status: Active | Entity Number: 212345 | Incorporation Date: 05/13/1967 | Registered address: 300 Phillipi Road, Columbus, OH 43228 (agent Corporation Service Company) | Bruce Thorn, President & CEO, since 2018-10-01 | Jonathan Ramsden, CFO, since 2020-06-15 | Lisa Bachmann, EVP, since 2019-03-01",
+  "source_url": "https://businesssearch.ohiosos.gov/?businessDetails/212345",
+  "credits_spent": 1
+}

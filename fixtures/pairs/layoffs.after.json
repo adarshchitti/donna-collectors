@@ -1,0 +1,24 @@
+{
+  "company_id": "big-lots-001",
+  "source": "layoffs",
+  "fetched_at": "2026-10-10T12:00:00Z",
+  "run_id": "snap-layoffs-after",
+  "ok": true,
+  "error": null,
+  "items": [
+    {
+      "key": "notice:WARN-2026-187",
+      "type": "warn_notice",
+      "id": "WARN-2026-187",
+      "company": "Big Lots, Inc.",
+      "notice_date": "2026-10-07",
+      "effective_date": "2026-12-05",
+      "employees_affected": 214,
+      "site": "Franklin County, OH",
+      "notice_url": "https://jfs.ohio.gov/warn/docs/WARN-2026-187.pdf"
+    }
+  ],
+  "raw_excerpt": "Notice Date: 2026-10-07 | Company: Big Lots, Inc. | County: Franklin | Layoff/Closure Date: 2026-12-05 | Employees Affected: 214",
+  "source_url": "https://jfs.ohio.gov/warn/warnnotices.stm",
+  "credits_spent": 1
+}

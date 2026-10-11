@@ -1,0 +1,12 @@
+{
+  "company_id": "big-lots-001",
+  "source": "layoffs",
+  "fetched_at": "2026-10-03T12:00:00Z",
+  "run_id": "snap-layoffs-before",
+  "ok": true,
+  "error": null,
+  "items": [],
+  "raw_excerpt": "",
+  "source_url": "https://jfs.ohio.gov/warn/warnnotices.stm",
+  "credits_spent": 1
+}

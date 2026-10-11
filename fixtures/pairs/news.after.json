@@ -1,0 +1,53 @@
+{
+  "company_id": "big-lots-001",
+  "source": "news",
+  "fetched_at": "2026-10-10T12:00:00Z",
+  "run_id": "snap-news-after",
+  "ok": true,
+  "error": null,
+  "items": [
+    {
+      "key": "article:aba4ab7efa9d29bb0e55f4414636016f0c6171a1",
+      "type": "article",
+      "headline": "Big Lots completes sale of Columbus distribution center",
+      "headline_norm": "big lots completes sale of columbus distribution center",
+      "url": "https://www.battelle.org/insights/newsroom",
+      "outlet": "battelle.org",
+      "date": "2026-09-30",
+      "unlocked": true
+    },
+    {
+      "key": "article:7de2f845ac5ac51799f293c88284b5d71003a449",
+      "type": "article",
+      "headline": "Big Lots CFO Jonathan Ramsden Departs Company",
+      "headline_norm": "big lots cfo jonathan ramsden departs company",
+      "url": "https://www.reuters.com/business/retail-consumer/big-lots-cfo-departure-2026-09-15/",
+      "outlet": "reuters.com",
+      "date": "2026-10-09",
+      "unlocked": true
+    },
+    {
+      "key": "article:6f1c319d70f80e1c6c92d2796c27df2dabc6a37b",
+      "type": "article",
+      "headline": "Big Lots CFO Jonathan Ramsden Departs Company!",
+      "headline_norm": "big lots cfo jonathan ramsden departs company",
+      "url": "https://www.bizjournals.com/columbus/news/2026/09/15/big-lots-cfo-exit.html",
+      "outlet": "bizjournals.com",
+      "date": "2026-10-09",
+      "unlocked": false
+    },
+    {
+      "key": "article:cb56f3beffa3700e73fff6ec29e50336caf6e09d",
+      "type": "article",
+      "headline": "Big Lots CFO Jonathan Ramsden departs company",
+      "headline_norm": "big lots cfo jonathan ramsden departs company",
+      "url": "https://www.dispatch.com/story/business/2026/09/15/big-lots-cfo-departs/",
+      "outlet": "dispatch.com",
+      "date": "2026-10-10",
+      "unlocked": false
+    }
+  ],
+  "raw_excerpt": "=== https://www.battelle.org/insights/newsroom\nBig Lots completes sale of Columbus distribution center\n=== https://www.reuters.com/business/retail-consumer/big-lots-cfo-departure-2026-09-15/\nBig Lots CFO Jonathan Ramsden Departs Company\n=== https://www.bizjournals.com/columbus/news/2026/09/15/big-lots-cfo-exit.html\nBig Lots CFO Jonathan Ramsden Departs Company!\n=== https://www.dispatch.com/story/business/2026/09/15/big-lots-cfo-departs/\nBig Lots CFO Jonathan Ramsden departs company",
+  "source_url": "https://www.google.com/search?q=%22Big%20Lots%2C%20Inc.%22%20news&gl=us&hl=en",
+  "credits_spent": 4
+}

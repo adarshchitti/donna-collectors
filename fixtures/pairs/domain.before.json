@@ -1,0 +1,54 @@
+{
+  "company_id": "big-lots-001",
+  "source": "domain",
+  "fetched_at": "2026-10-03T12:00:00Z",
+  "run_id": "snap-domain-before",
+  "ok": true,
+  "error": null,
+  "items": [
+    {
+      "key": "whois:registrar",
+      "type": "whois_field",
+      "field": "registrar",
+      "value": "MarkMonitor Inc."
+    },
+    {
+      "key": "whois:registered",
+      "type": "whois_field",
+      "field": "registered",
+      "value": "1996-01-18T05:00:00Z"
+    },
+    {
+      "key": "whois:expires",
+      "type": "whois_field",
+      "field": "expires",
+      "value": "2027-01-19T05:00:00Z"
+    },
+    {
+      "key": "whois:updated",
+      "type": "whois_field",
+      "field": "updated",
+      "value": "2025-12-18T09:31:42Z"
+    },
+    {
+      "key": "whois:name_servers",
+      "type": "whois_field",
+      "field": "name_servers",
+      "value": "a1-98.akam.net, a13-65.akam.net, a20-66.akam.net"
+    },
+    {
+      "key": "home:hash",
+      "type": "page_hash",
+      "content_hash": "7c22e315afe7a517710ccf2cbaaac50d38b25218"
+    },
+    {
+      "key": "home:title",
+      "type": "page_title",
+      "title": "Big Lots | Deals on Furniture, Patio, & Home Decor",
+      "value": "Big Lots | Deals on Furniture, Patio, & Home Decor"
+    }
+  ],
+  "raw_excerpt": "Registrar: MarkMonitor Inc. Creation Date: 1996-01-18T05:00:00Z Registry Expiry Date: 2027-01-19T05:00:00Z Updated Date: 2025-12-18T09:31:42Z Name Server: A1-98.AKAM.NET Name Server: A13-65.AKAM.NET Name Server: A20-66.AKAM.NET",
+  "source_url": "https://www.whois.com/whois/biglots.com",
+  "credits_spent": 2
+}

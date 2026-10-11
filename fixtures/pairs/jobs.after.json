@@ -1,0 +1,30 @@
+{
+  "company_id": "big-lots-001",
+  "source": "jobs",
+  "fetched_at": "2026-10-10T12:00:00Z",
+  "run_id": "snap-jobs-after",
+  "ok": true,
+  "error": null,
+  "items": [
+    {
+      "key": "jobs:title:supply-chain-analyst",
+      "type": "job_title",
+      "title": "Supply Chain Analyst"
+    },
+    {
+      "key": "jobs:title:distribution-center-lead",
+      "type": "job_title",
+      "title": "Distribution Center Lead"
+    },
+    {
+      "key": "jobs:count",
+      "type": "job_count",
+      "open_roles": 12,
+      "value": "12",
+      "basis": "careers-page"
+    }
+  ],
+  "raw_excerpt": "=== https://www.biglots.com/careers\nCareers at Big Lots — 12 open positions. Supply Chain Analyst, Distribution Center Lead, ...",
+  "source_url": "https://www.biglots.com/careers",
+  "credits_spent": 2
+}

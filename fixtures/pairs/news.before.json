@@ -1,0 +1,23 @@
+{
+  "company_id": "big-lots-001",
+  "source": "news",
+  "fetched_at": "2026-10-03T12:00:00Z",
+  "run_id": "snap-news-before",
+  "ok": true,
+  "error": null,
+  "items": [
+    {
+      "key": "article:aba4ab7efa9d29bb0e55f4414636016f0c6171a1",
+      "type": "article",
+      "headline": "Big Lots completes sale of Columbus distribution center",
+      "headline_norm": "big lots completes sale of columbus distribution center",
+      "url": "https://www.battelle.org/insights/newsroom",
+      "outlet": "battelle.org",
+      "date": "2026-09-30",
+      "unlocked": true
+    }
+  ],
+  "raw_excerpt": "=== https://www.battelle.org/insights/newsroom\nBig Lots completes sale of Columbus distribution center",
+  "source_url": "https://www.google.com/search?q=%22Big%20Lots%2C%20Inc.%22%20news&gl=us&hl=en",
+  "credits_spent": 2
+}

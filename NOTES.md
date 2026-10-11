@@ -35,6 +35,21 @@ purpose:
   `registry_id` from the SoS details page once an unlocker zone exists —
   a wrong entity number is worse than none.
 
+## fixtures/pairs/ — differ replay pack
+
+Before/after envelope snapshots (contract shape exactly; `src/pairs.test.ts`
+schema-validates every file and asserts the intended delta):
+
+- `registry` — `officer:jonathan-ramsden:cfo` removed (CFO departure) and
+  `status:current` ALTERED Active→Cancelled (same key, new value).
+- `court` — `case:26CV002147` appears; `meta:current_through` rolls forward.
+- `layoffs` — `notice:WARN-2026-187` appears from an empty baseline.
+- `jobs` — `jobs:count` drops 75→12 and two `jobs:title:*` records vanish.
+- `domain` — only `home:hash` content_hash changes; whois fields identical.
+- `news` — one story under three outlet URLs: three `article:<sha1(url)>`
+  keys sharing one `headline_norm`, i.e. ONE new story for the differ, not
+  three.
+
 Shared context:
 
 - **Fetch layer.** `src/fetcher/live.ts` posts to

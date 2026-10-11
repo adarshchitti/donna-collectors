@@ -1,0 +1,40 @@
+{
+  "company_id": "big-lots-001",
+  "source": "jobs",
+  "fetched_at": "2026-10-03T12:00:00Z",
+  "run_id": "snap-jobs-before",
+  "ok": true,
+  "error": null,
+  "items": [
+    {
+      "key": "jobs:title:senior-materials-scientist",
+      "type": "job_title",
+      "title": "Senior Materials Scientist"
+    },
+    {
+      "key": "jobs:title:supply-chain-analyst",
+      "type": "job_title",
+      "title": "Supply Chain Analyst"
+    },
+    {
+      "key": "jobs:title:store-manager-columbus",
+      "type": "job_title",
+      "title": "Store Manager - Columbus"
+    },
+    {
+      "key": "jobs:title:distribution-center-lead",
+      "type": "job_title",
+      "title": "Distribution Center Lead"
+    },
+    {
+      "key": "jobs:count",
+      "type": "job_count",
+      "open_roles": 75,
+      "value": "75",
+      "basis": "careers-page"
+    }
+  ],
+  "raw_excerpt": "=== https://www.biglots.com/careers\nCareers at Big Lots — 75 open positions. Senior Materials Scientist, Supply Chain Analyst, Store Manager - Columbus, Distribution Center Lead, ...",
+  "source_url": "https://www.biglots.com/careers",
+  "credits_spent": 2
+}

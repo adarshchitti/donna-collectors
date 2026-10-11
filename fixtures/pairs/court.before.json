@@ -1,0 +1,28 @@
+{
+  "company_id": "big-lots-001",
+  "source": "court",
+  "fetched_at": "2026-10-03T12:00:00Z",
+  "run_id": "snap-court-before",
+  "ok": true,
+  "error": null,
+  "items": [
+    {
+      "key": "meta:current_through",
+      "type": "meta",
+      "field": "current_through",
+      "value": "2026-10-01"
+    },
+    {
+      "key": "case:24CV003456",
+      "type": "case",
+      "docket_number": "24CV003456",
+      "caption": "Maldonado v. Big Lots Stores, Inc.",
+      "role": "Defendant",
+      "filed": "2024-06-11",
+      "status": "Open"
+    }
+  ],
+  "raw_excerpt": "Case information is current through 2026-10-01\n24CV003456 — Maldonado v. Big Lots Stores, Inc. (Defendant, filed 2024-06-11, Open)",
+  "source_url": "https://fcdcfcjs.co.franklin.oh.us/CaseInformationOnline/partySearch?name=Big%20Lots%2C%20Inc.",
+  "credits_spent": 1
+}
