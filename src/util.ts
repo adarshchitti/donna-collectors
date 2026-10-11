@@ -47,21 +47,59 @@ export function envelope(
   };
 }
 
-const BLOCK_MARKERS = [
-  'captcha',
-  'access denied',
-  'unusual traffic',
-  'pardon our interruption',
-  'px-captcha',
+/**
+ * Markers specific enough to be conclusive wherever they appear. These are
+ * strings no ordinary page carries by accident.
+ */
+const STRONG_BLOCK_MARKERS = [
   'cf-chl-',
-  'cloudflare',
-  'request blocked',
-  'bot detection',
+  'px-captcha',
+  'cf-browser-verification',
+  'challenge-platform',
+  'pardon our interruption',
   'are you a robot',
   'verify you are a human',
+  'enable javascript and cookies to continue',
+];
+
+/**
+ * Markers that appear on plenty of LEGITIMATE pages and so prove nothing on
+ * their own: a contact form mentions reCAPTCHA, a CDN URL mentions Cloudflare,
+ * a support article mentions "access denied". They only count when the page
+ * also LOOKS like a challenge -- see assertUnblocked.
+ *
+ * Scanning for bare 'captcha' used to be enough to fail a fetch, and it threw
+ * away a 581KB Goodyear homepage titled "Shop For Tires Online" because the
+ * word appeared once in a script. That cost the data AND the credit, and made
+ * coverage look worse than it was.
+ */
+const WEAK_BLOCK_MARKERS = [
+  'captcha',
+  'cloudflare',
+  'access denied',
+  'unusual traffic',
+  'request blocked',
+  'bot detection',
   '403 forbidden',
   'temporarily blocked',
 ];
+
+/** Titles a challenge page actually uses. */
+const BLOCK_TITLES = [
+  'just a moment',
+  'attention required',
+  'access denied',
+  'security check',
+  'are you a robot',
+  'access to this page has been denied',
+  'one more step',
+];
+
+/**
+ * A challenge page is SMALL. Real content pages run to hundreds of kilobytes;
+ * an interstitial is a few. Used only to corroborate a weak marker, never alone.
+ */
+const CHALLENGE_MAX_BYTES = 40_000;
 
 export class BlockedError extends Error {
   constructor(marker: string) {
@@ -71,16 +109,38 @@ export class BlockedError extends Error {
 }
 
 /**
- * Throw when an unlocked body looks like a block/challenge page rather than
- * the real page. A 200 status does not mean content — challenge pages are
- * served with 200 — so every collector must call this before parsing.
+ * Throw when an unlocked body looks like a block/challenge page rather than the
+ * real page. A 200 status does not mean content -- challenge pages are served
+ * with 200 -- so every collector must call this before parsing.
+ *
+ * Three independent signals, deliberately ordered cheapest-first:
+ *   1. a strong marker, conclusive anywhere;
+ *   2. a challenge title, conclusive because titles are short and deliberate;
+ *   3. a weak marker on a SMALL page -- the word plus the shape.
+ *
+ * Getting this wrong is expensive in both directions: too strict discards real
+ * pages and the credits spent fetching them, and too loose parses an
+ * interstitial as if it were the counterparty's record.
  */
 export function assertUnblocked(body: string): void {
+  if (body.trim().length === 0) throw new BlockedError('empty body');
+
   const head = body.slice(0, 50_000).toLowerCase();
-  for (const m of BLOCK_MARKERS) {
+
+  for (const m of STRONG_BLOCK_MARKERS) {
     if (head.includes(m)) throw new BlockedError(m);
   }
-  if (body.trim().length === 0) throw new BlockedError('empty body');
+
+  const title = /<title[^>]*>([^<]{0,120})</i.exec(head)?.[1]?.trim() ?? '';
+  for (const t of BLOCK_TITLES) {
+    if (title.includes(t)) throw new BlockedError(`title: ${t}`);
+  }
+
+  if (body.length <= CHALLENGE_MAX_BYTES) {
+    for (const m of WEAK_BLOCK_MARKERS) {
+      if (head.includes(m)) throw new BlockedError(`${m} on a ${body.length}-byte page`);
+    }
+  }
 }
 
 export interface SerpResult {
