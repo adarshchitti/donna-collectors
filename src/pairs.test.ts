@@ -9,7 +9,7 @@ import { collectorEnvelopeSchema, type CollectorEnvelope } from './contract.js';
  * intended observable change: a record removed, a record altered (same key,
  * different value), or a record added.
  */
-const PAIRS_DIR = join(__dirname, '..', 'fixtures', 'pairs');
+const PAIRS_DIR = join(import.meta.dirname, '..', 'fixtures', 'pairs');
 const SOURCES = ['registry', 'court', 'layoffs', 'jobs', 'domain', 'news'] as const;
 
 function load(name: string): CollectorEnvelope {

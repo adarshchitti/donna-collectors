@@ -50,6 +50,20 @@ schema-validates every file and asserts the intended delta):
   keys sharing one `headline_norm`, i.e. ONE new story for the differ, not
   three.
 
+## CLI — `npm run collect`
+
+`npm run collect -- --source <source> --company <name|registry_id|index>`
+prints the envelope JSON. **Replay is the default** (saved fixtures, zero
+credits — a careless run cannot spend money); `--live` opts in to real
+Bright Data fetches through `LiveFetcher` with a `.cache/` disk cache.
+`--dry-run` is an explicit spelling of the default. `--list` shows the
+`ohio-companies.json` universe with indexes.
+
+Replay caveat: fixtures are captures for specific companies (Battelle for
+news/jobs, Bath & Body Works for executives, authored HTML for unlocker
+sources), so replaying `--company "Dana Incorporated"` runs the full code
+path but the items describe the recorded evidence.
+
 Shared context:
 
 - **Fetch layer.** `src/fetcher/live.ts` posts to

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "collect": "vite-node src/cli.ts"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
