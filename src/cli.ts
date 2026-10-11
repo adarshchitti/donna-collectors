@@ -22,10 +22,8 @@ import { SOURCES, type CanonicalCompany, type Source } from './contract.js';
 import { ReplayFetcher, serpKey, unlockerKey, type ReplayMap } from './fetcher/replay.js';
 import { LiveFetcher } from './fetcher/live.js';
 import { slug } from './util.js';
-import { detailsUrl } from './collectors/registry.js';
-import { partySearchUrl } from './collectors/court.js';
-import { elicenseUrl, ofacUrl } from './collectors/regulator.js';
-import { warnUrl } from './collectors/layoffs.js';
+import { searchUrl as registrySearchUrl, companyUrl as registryCompanyUrl } from './collectors/registry.js';
+import { searchUrl as courtSearchUrl } from './collectors/court.js';
 import { newsQuery } from './collectors/news.js';
 import { execQuery } from './collectors/executives.js';
 import { jobsQuery } from './collectors/jobs.js';
@@ -96,16 +94,17 @@ function toCanonical(c: CompanyRecord): CanonicalCompany {
 function replayMap(company: CanonicalCompany, source: Source): ReplayMap {
   switch (source) {
     case 'registry':
-      return { [unlockerKey(detailsUrl(company))]: 'registry/details-healthy.html' };
-    case 'court':
-      return { [unlockerKey(partySearchUrl(company))]: 'court/party-search-healthy.html' };
-    case 'regulator':
       return {
-        [unlockerKey(elicenseUrl(company))]: 'regulator/elicense-healthy.html',
-        [unlockerKey(ofacUrl(company))]: 'regulator/ofac-healthy.html',
+        [unlockerKey(registrySearchUrl(company))]: 'registry/opencorporates-search-biglots.html',
+        // the company page the collector picks out of the captured search
+        [unlockerKey(registryCompanyUrl('1215332'))]: 'registry/opencorporates-company-biglots.html',
       };
+    case 'court':
+      return { [unlockerKey(courtSearchUrl(company))]: 'court/courtlistener-search-biglots.json' };
+    case 'regulator':
     case 'layoffs':
-      return { [unlockerKey(warnUrl())]: 'layoffs/warn-healthy.html' };
+      // both collectors fail visibly before any fetch (government domains)
+      return {};
     case 'domain': {
       const d = company.domains[0];
       return d

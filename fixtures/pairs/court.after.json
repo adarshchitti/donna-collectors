@@ -7,31 +7,43 @@
   "error": null,
   "items": [
     {
-      "key": "meta:current_through",
+      "key": "meta:result_count",
       "type": "meta",
-      "field": "current_through",
-      "value": "2026-10-08"
+      "field": "result_count",
+      "value": "4861"
     },
     {
-      "key": "case:24CV003456",
+      "key": "case:ohsd:2:24-cv-01811",
       "type": "case",
-      "docket_number": "24CV003456",
-      "caption": "Maldonado v. Big Lots Stores, Inc.",
-      "role": "Defendant",
-      "filed": "2024-06-11",
-      "status": "Closed"
+      "docket_number": "2:24-cv-01811",
+      "case_name": "Supplier Co v. Big Lots Stores, Inc.",
+      "court": "District Court, S.D. Ohio",
+      "court_id": "ohsd",
+      "docket_type": "Federal Question",
+      "suit_nature": "190 Contract: Other",
+      "cause": "11 U.S.C. 362 Suggestion of Bankruptcy — stayed",
+      "filed": "2024-05-02",
+      "status": "stayed",
+      "docket_url": "https://www.courtlistener.com/docket/69998888/supplier-co-v-big-lots-stores-inc/"
     },
     {
-      "key": "case:26CV002147",
-      "type": "case",
-      "docket_number": "26CV002147",
-      "caption": "Ohio BWC v. Big Lots, Inc.",
-      "role": "Defendant",
-      "filed": "2026-10-05",
-      "status": "Open"
+      "key": "insolvency:deb:1:24-bk-11885",
+      "type": "insolvency_filing",
+      "docket_number": "1:24-bk-11885",
+      "case_name": "In re: BIG LOTS, INC.",
+      "court": "Bankruptcy Court, D. Delaware",
+      "court_id": "deb",
+      "docket_type": "Bankruptcy",
+      "suit_nature": "",
+      "cause": "",
+      "filed": "2024-09-09",
+      "status": "open",
+      "chapter": "11",
+      "trustee": "",
+      "docket_url": "https://www.courtlistener.com/docket/69321123/big-lots-inc/"
     }
   ],
-  "raw_excerpt": "Case information is current through 2026-10-08\n24CV003456 — Maldonado v. Big Lots Stores, Inc. (Defendant, filed 2024-06-11, Closed)\n26CV002147 — Ohio BWC v. Big Lots, Inc. (Defendant, filed 2026-10-05, Open)",
-  "source_url": "https://fcdcfcjs.co.franklin.oh.us/CaseInformationOnline/partySearch?name=Big%20Lots%2C%20Inc.",
+  "raw_excerpt": "2:24-cv-01811 — Supplier Co v. Big Lots Stores, Inc. (District Court, S.D. Ohio, filed 2024-05-02, stayed)\n1:24-bk-11885 — In re: BIG LOTS, INC. (Bankruptcy Court, D. Delaware, filed 2024-09-09, chapter 11, open)",
+  "source_url": "https://www.courtlistener.com/api/rest/v4/search/?q=%22Big%20Lots%2C%20Inc.%22&type=r",
   "credits_spent": 1
 }

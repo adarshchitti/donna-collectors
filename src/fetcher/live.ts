@@ -25,6 +25,12 @@ export interface LiveFetcherOptions {
   /** Filesystem cache directory. Omit for in-memory caching only. */
   cacheDir?: string;
   endpoint?: string;
+  /** Base URL for non-/request Bright Data APIs (datasets). */
+  apiBase?: string;
+  /** Milliseconds between dataset snapshot progress polls. */
+  pollIntervalMs?: number;
+  /** Give up on a dataset snapshot after this many progress polls. */
+  maxPolls?: number;
   now?: () => Date;
 }
 
@@ -34,6 +40,9 @@ export class LiveFetcher implements Fetcher {
   private serpZone: string;
   private cacheDir?: string;
   private endpoint: string;
+  private apiBase: string;
+  private pollIntervalMs: number;
+  private maxPolls: number;
   private now: () => Date;
   private mem = new Map<string, FetchResult>();
 
@@ -43,6 +52,9 @@ export class LiveFetcher implements Fetcher {
     this.serpZone = opts.serpZone ?? process.env.BRIGHTDATA_SERP_ZONE ?? '';
     this.cacheDir = opts.cacheDir;
     this.endpoint = opts.endpoint ?? 'https://api.brightdata.com/request';
+    this.apiBase = opts.apiBase ?? 'https://api.brightdata.com';
+    this.pollIntervalMs = opts.pollIntervalMs ?? 3_000;
+    this.maxPolls = opts.maxPolls ?? 40;
     this.now = opts.now ?? (() => new Date());
   }
 
@@ -63,6 +75,93 @@ export class LiveFetcher implements Fetcher {
       `https://www.google.com/search?q=${encodeURIComponent(query)}` +
       `&gl=${encodeURIComponent(gl)}&hl=${encodeURIComponent(hl)}`;
     return this.request(this.serpZone, target, target);
+  }
+
+  /**
+   * Bright Data Marketplace Dataset API — NOT part of the contract Fetcher;
+   * collectors feature-detect it. Still first-party Bright Data, so it keeps
+   * the "everything goes through Bright Data" rule.
+   *
+   *   POST /datasets/filter {dataset_id, records_limit, filter:{name,operator,value}}
+   *     -> {snapshot_id}
+   *   GET  /datasets/v3/progress/<snapshot_id>   -> {status: ready|running|failed}
+   *   GET  /datasets/v3/snapshot/<snapshot_id>?format=json -> [records]
+   *
+   * Billing is per returned record (marketplace CPM), not per call —
+   * recordsLimit bounds it. Cached like /request calls by dataset+filter+day.
+   */
+  async dataset(
+    datasetId: string,
+    filter: { name: string; operator: string; value: string },
+    recordsLimit = 100,
+  ): Promise<FetchResult> {
+    if (!this.apiKey) throw new Error('BRIGHTDATA_API_KEY is not set');
+    const key = this.cacheKey(
+      'dataset',
+      `${datasetId}|${recordsLimit}|${JSON.stringify(filter)}`,
+    );
+    const hit = this.mem.get(key);
+    if (hit) return { ...hit, cache_hit: true };
+
+    const file = this.fileFor(key);
+    if (file && existsSync(file)) {
+      const cached: FetchResult = {
+        body: readFileSync(file, 'utf8'),
+        url: `dataset:${datasetId}`,
+        fetched_at: this.now().toISOString(),
+        credits_spent: 0,
+        cache_hit: true,
+      };
+      this.mem.set(key, cached);
+      return { ...cached };
+    }
+
+    const auth = { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' };
+    const trigger = await fetch(`${this.apiBase}/datasets/filter`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ dataset_id: datasetId, records_limit: recordsLimit, filter }),
+    });
+    const triggerBody = await trigger.text();
+    if (!trigger.ok) {
+      throw new Error(`dataset filter failed: HTTP ${trigger.status} ${triggerBody.slice(0, 200)}`);
+    }
+    const snapshotId = (JSON.parse(triggerBody) as { snapshot_id?: string }).snapshot_id;
+    if (!snapshotId) throw new Error(`dataset filter returned no snapshot_id: ${triggerBody.slice(0, 200)}`);
+
+    let status = '';
+    for (let i = 0; i < this.maxPolls; i++) {
+      const prog = await fetch(`${this.apiBase}/datasets/v3/progress/${snapshotId}`, {
+        headers: { Authorization: auth.Authorization },
+      });
+      status = (((await prog.json()) as { status?: string }).status ?? '').toLowerCase();
+      if (status === 'ready') break;
+      if (status === 'failed' || status === 'canceled') {
+        throw new Error(`dataset snapshot ${snapshotId} ${status}`);
+      }
+      await new Promise((r) => setTimeout(r, this.pollIntervalMs));
+    }
+    if (status !== 'ready') throw new Error(`dataset snapshot ${snapshotId} not ready after ${this.maxPolls} polls`);
+
+    const dl = await fetch(`${this.apiBase}/datasets/v3/snapshot/${snapshotId}?format=json`, {
+      headers: { Authorization: auth.Authorization },
+    });
+    const body = await dl.text();
+    if (!dl.ok) throw new Error(`dataset snapshot download failed: HTTP ${dl.status} ${body.slice(0, 200)}`);
+
+    const result: FetchResult = {
+      body,
+      url: `dataset:${datasetId}`,
+      fetched_at: this.now().toISOString(),
+      credits_spent: 1,
+      cache_hit: false,
+    };
+    this.mem.set(key, result);
+    if (file) {
+      mkdirSync(this.cacheDir as string, { recursive: true });
+      writeFileSync(file, body);
+    }
+    return result;
   }
 
   private cacheKey(zone: string, target: string): string {
@@ -103,6 +202,23 @@ export class LiveFetcher implements Fetcher {
       body: JSON.stringify({ zone, url: target, format: 'raw' }),
     });
     const body = await res.text();
+
+    // Bright Data can REFUSE a target (e.g. government domains it will not
+    // fetch by policy) and still return HTTP 200 — often with a zero-byte
+    // body — carrying the real failure only in x-brd-* response headers.
+    // Treating that as an empty page is a silent false negative: every
+    // x-brd-error header is a hard fetch failure and must throw.
+    const brdError = res.headers.get('x-brd-error');
+    if (brdError) {
+      const code = res.headers.get('x-brd-error-code');
+      const upstream = res.headers.get('x-brd-status-code');
+      throw new Error(
+        `Bright Data refused ${resultUrl} — x-brd-error: "${brdError}"` +
+          (code || upstream
+            ? ` (x-brd-error-code: ${code ?? '?'}, x-brd-status-code: ${upstream ?? '?'})`
+            : ''),
+      );
+    }
     if (!res.ok) throw new Error(`Bright Data request failed: HTTP ${res.status} ${body.slice(0, 200)}`);
 
     const result: FetchResult = {

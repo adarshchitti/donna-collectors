@@ -44,10 +44,11 @@ describe('fixtures/pairs replay pack', () => {
     expect(aStatus?.value).toBe('Cancelled');
   });
 
-  it('court: a new docket appears', () => {
+  it('court: a bankruptcy petition appears as a distinct insolvency_filing', () => {
     const { before, after } = pair('court');
-    expect(keys(before).has('case:26CV002147')).toBe(false);
-    expect(keys(after).has('case:26CV002147')).toBe(true);
+    expect(keys(before).has('insolvency:deb:1:24-bk-11885')).toBe(false);
+    const bk = after.items.find((i) => i.key === 'insolvency:deb:1:24-bk-11885');
+    expect(bk).toMatchObject({ type: 'insolvency_filing', chapter: '11' });
     expect(after.items.length).toBe(before.items.length + 1);
   });
 

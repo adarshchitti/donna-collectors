@@ -1,207 +1,209 @@
 # Collector notes — per source
 
-## Validation status (updated 2026-10-10)
+## Validation status (updated 2026-10-10, source-swap pass)
 
-| source | SERP/query half | page-body half |
+| source | fetch half | details |
 |---|---|---|
-| news | **validated against a real page** — live capture, `"Battelle" news`, 2026-10-10 | fixture-only, unvalidated (no unlocker zone) |
-| executives | **validated against a real page** — live capture, `"Bath & Body Works" ...`, 2026-10-10 | fixture-only, unvalidated (authored PR page) |
-| jobs | **validated against a real page** — live capture, `Battelle careers open positions`, 2026-10-10 | fixture-only, unvalidated (authored careers page) |
-| registry | n/a | fixture-only, unvalidated (no unlocker zone) |
-| court | n/a | fixture-only, unvalidated (no unlocker zone) |
-| regulator | n/a | fixture-only, unvalidated (no unlocker zone) |
-| layoffs | n/a | fixture-only, unvalidated (no unlocker zone) |
-| domain | n/a | fixture-only, unvalidated (no unlocker zone) |
+| registry | **validated against a real page** — live captures of the OpenCorporates us_oh search AND company page, 2026-10-10 (Big Lots) | officer items fixture-only (OC login-gates officers on the captured page) |
+| court | **validated against a real page** — live capture of the CourtListener v4 search API, 2026-10-10 (63KB JSON) | `insolvency_filing`/`stayed` paths exercised on a schema-modeled fixture carrying the real Big Lots Ch.11 docket (see below) |
+| regulator | **UNAVAILABLE** | both sub-sources verified blocked live 2026-10-10 |
+| layoffs | **UNAVAILABLE** | jfs.ohio.gov blocked; no reachable non-gov WARN source |
+| news | SERP **validated against a real page** — earlier live capture | article-body half fixture-only, unvalidated |
+| executives | SERP **validated against a real page** — earlier live capture | PR body fixture-only, unvalidated |
+| jobs | SERP **validated against a real page** — earlier live capture | careers page fixture-only; **Indeed dataset path implemented, stub-tested, NOT yet validated live** |
+| domain | fixture-only | whois.com + homepage are non-government, expected to work under the new unlocker zone; not revalidated |
 
-`brightdata zones` as of 2026-10-10 still lists only `serp_api1` — no Web
-Unlocker zone. Live-call log: 2 calls spent on the executives recapture
-(first returned HTTP 200 with a 0-byte body — transient; retry succeeded),
-5 probe calls for entity-number discovery (one empty body, retried).
+## Bright Data refuses government domains — the fix that made this visible
+
+Bright Data classifies government domains as un-fetchable by policy. The
+refusal arrives as **HTTP 200 with a zero-byte body**; the real failure only
+lives in response headers: `x-brd-error`, `x-brd-error-code`, and
+`x-brd-status-code`. `LiveFetcher` used to treat that as a successful empty
+fetch — a silent false negative. It now **throws** when `x-brd-error` is
+present, naming the URL and quoting the header
+(`src/fetcher/live.ts`, covered by `src/fetcher/live.test.ts`).
+
+Verified blocked this session (live calls, 2026-10-10):
+
+- `businesssearch.ohiosos.gov` (registry)
+- `fcdcfcjs.co.franklin.oh.us` (court)
+- `jfs.ohio.gov` (layoffs)
+- `sanctionslistservice.ofac.treas.gov` (OFAC)
+- `elicense.ohio.gov` (licences) — blocked too; the licence half is also gone
+- `sec.gov`
+
+Also refused, by a different mechanism: `opensanctions.org` returns
+`x-brd-error-code: policy_20140` (residential robots.txt/KYC policy) — so the
+standard non-government OFAC mirror is *not* reachable either.
+
+Blocked domains are never fetched — the refusal is deterministic and a
+refused call still risks billing, so `regulator` and `layoffs` fail fast with
+`{ok:false}` before any request.
+
+## New item types — for the rules table
+
+New `item.type` values emitted by this pass, so rules can classify them
+(an unclassified type is invisible, not an error):
+
+- **`insolvency_filing`** — emitted by `court` for a bankruptcy docket
+  (key `insolvency:<court_id>:<docket>`; fields `docket_number`, `case_name`,
+  `court`, `court_id`, `docket_type`, `suit_nature`, `cause`, `chapter`,
+  `filed`, `status`, `party`, `docket_url`, `trustee`). Tier 1.
+- **`change_of_control`** — emitted by `registry` for filings whose type is a
+  control transfer (MERGER/CONSOLIDATION/ACQUISITION/TAKEOVER/DEMERGER —
+  matched on OC filing types like `MERGER/DOMESTIC`, `MERGER/FOREIGN`).
+  Key `change_of_control:<oc filing id>`; fields `filing_id`, `filing_type`,
+  `date`, `description`, `evidence`. Tier 1.
+- **`case` with `status` containing `stayed`** — a civil docket that reports
+  a stay (e.g. `cause: "11 U.S.C. 362 Suggestion of Bankruptcy"`). Note the
+  deliberate boundary: a case *stayed by* bankruptcy is a `case`, not an
+  `insolvency_filing` — only the bankruptcy docket itself is insolvency.
+- `meta` items gained new fields: `meta:entity_number` (registry — the SoS
+  entity number, now observable via OC), `meta:result_count` (court),
+  `meta:dataset` (jobs — dataset id, record counts, `as_of`).
+
+## Bright Data dataset marketplace — investigated 2026-10-10
+
+`GET https://api.brightdata.com/datasets/list` → 1,857 datasets. **No
+sanctions, court, WARN, or government-registry datasets exist** — the
+marketplace is commercial data only, so it cannot rescue the blocked sources.
+
+API shape (documented): `POST /datasets/filter` `{dataset_id, records_limit,
+filter:{name, operator, value}}` → `snapshot_id`; poll
+`GET /datasets/v3/progress/<id>` until `ready`; download
+`GET /datasets/v3/snapshot/<id>?format=json`. Billing is **per returned
+record** (~$2.5 CPM), not per call — `records_limit` bounds it. A sync
+`POST /datasets/search/:dataset_id` exists but covers only 3 LinkedIn
+datasets (alpha).
+
+`LiveFetcher.dataset(id, filter, limit)` implements trigger → poll →
+download with the same day-cache as `/request` calls. It is not on the
+contract `Fetcher` interface — collectors feature-detect it
+(`typeof fetcher.dataset === 'function'`); ReplayFetcher has no `dataset`,
+so replay always exercises the non-dataset path.
+
+**Where it is used:** `jobs` prefers the Indeed dataset
+`gd_l4dx9j9sscpvs7no2` (7.4M listings, `company_name includes <canonical>`,
+limit 100), then re-checks `company_name` client-side. On ANY dataset error
+it falls back to the SERP path and marks the attempt on `meta:dataset` —
+never silently.
+
+**Trade-off noted:** a dataset is broader but staler than a live fetch.
+`fetched_at` is fixed by the contract to the download time, so dataset
+currency rides in items instead: `meta:dataset.as_of` (freshest posting date
+in the returned records) and per-title `posted`. A user clicking through
+sees the date the fact was true, not the day we pulled it.
+
+Candidates not yet wired: LinkedIn company info
+(`gd_l1vikfnt1wgvvqz95w` / `gd_lbgqn2movva0ntlmz`, 55M — officers/identity
+for `executives`/`registry`) and Crunchbase companies
+(`gd_l1vijqt9jfj7olije`, 2.3M — funding/acquisition events →
+`change_of_control`). `registry` already emits `change_of_control` from OC
+merger filings (validated); these stay documented options.
+
+## registry — OpenCorporates us_oh (REPLACES Ohio SoS)
+
+- Search: `https://opencorporates.com/companies/us_oh?q=<canonical name>`;
+  pick best `li.search-result.company` by name match — exact normalized
+  name > core-name (suffixes stripped) > "Previously/Alternatively known as"
+  hint in `span.slight_highlight`. Then unlock the company page
+  `/companies/us_oh/<company number>`. Two unlocks per run.
+- Company page selectors (validated on the live Big Lots capture):
+  `dd.company_number`, `dd.status`, `dd.registered_address li.address_line`,
+  `dd.previous_names li.name_line`, `dd.other_identifiers a.identifier`,
+  `#filings .filing` (id `filing_<n>`, `.subhead a.filing` = type,
+  `.dateline` = date).
+- **Name changes break naive matching** — the real Big Lots entity is now
+  "FORMER BL STORES, INC."; it is found only through its
+  previously-known-as hint.
+- **Gaps vs SoS:** officers are login-gated on some OC pages ("N officers
+  available, please log in") — officer items are emitted only when the list
+  is public. No statutory agent, no filing PDFs.
+- Bonus: `meta:entity_number` now supplies the entity number that
+  `ohio-companies.json` could not fill (see below).
+
+## court — CourtListener REST API (REPLACES Franklin County Common Pleas)
+
+- `GET https://www.courtlistener.com/api/rest/v4/search/?q="<name>"&type=r`
+  → JSON `{count, results:[{docketNumber, caseName, court, court_id,
+  jurisdictionType, chapter, cause, suitNature, dateFiled, dateTerminated,
+  party[], trustee_str, docket_absolute_url}]}` — no HTML parsing needed.
+- **An upgrade, not a workaround:** RECAP covers federal bankruptcy dockets —
+  the counterparty Chapter 11 that no previous source could see.
+- `type=r` is full-text; only rows where the company/alias is a **party** or
+  in the caption become items (the rest are mentions).
+- `status`: `stayed` when the record's own text reports a stay,
+  `terminated <date>` when `dateTerminated` is set, else `open`.
+- **Gaps:** county/state courts are out of scope — the Franklin County
+  coverage is gone, not moved. Only the first results page is read (one
+  fetch per run; for heavily-litigated names a bankruptcy docket can sit
+  past page 1 — the Big Lots Ch.11 is real on CourtListener but not in the
+  captured first page).
+- `fixtures/court/courtlistener-search-insolvency.json` is **schema-modeled**
+  on the real capture and carries the real Big Lots Ch.11 docket
+  (`1:24-bk-11885`, Bankr. D. Del., filed 2024-09-09) — it exercises
+  classification, it is not a live capture.
+
+## regulator — UNAVAILABLE
+
+- `elicense.ohio.gov` and `sanctionssearch.ofac.treas.gov` both verified
+  blocked live. opensanctions.org (standard OFAC mirror) refused under
+  `policy_20140` (robots/KYC). No non-government per-company SDN query
+  exists; no licence mirror exists; no marketplace dataset exists.
+- Envelope: `{ok:false, error:'regulator unavailable: Bright Data blocks
+  government domains ...'}`, `credits_spent: 0` — a visible gap, not a fake
+  "no sanctions". Old parsers are in git history.
+
+## layoffs — UNAVAILABLE
+
+- `jfs.ohio.gov` verified blocked. warntracker.com probed live — generic
+  SPA, no usable notices endpoint. No WARN marketplace dataset. Same
+  visible `{ok:false}` treatment, `credits_spent: 0`.
+
+## jobs — SERP/careers + Indeed dataset
+
+- Live (LiveFetcher): Indeed dataset first, SERP fallback — see dataset
+  section above. Replay (no `dataset()`): the original SERP → careers-page
+  path, unchanged.
+- `basis` on `jobs:count`: `indeed-dataset` | `careers-page` | `serp-snippet`.
 
 ## Ohio company universe (ohio-companies.json)
 
-30 real Ohio-registered companies, weighted toward Franklin County because
-the court collector covers Franklin County Common Pleas, and toward names
-with real court/WARN history (Big Lots, Express, FirstEnergy-HB6, Diebold
-Nixdorf, Smucker, Dana...). `registry_id` is EMPTY for every entry — on
-purpose:
-
-- `site:` queries return 0 results through the SERP zone (operator appears
-  unsupported — verified on businesssearch.ohiosos.gov and opencorporates).
-- Entity numbers do not appear in ordinary SERP snippets either; they only
-  live on the SoS detail page itself (SPA, needs the missing unlocker zone)
-  or on aggregator detail pages (also need unlock).
-- Probes recorded under `fixtures/discovery/` for provenance. Fill
-  `registry_id` from the SoS details page once an unlocker zone exists —
-  a wrong entity number is worse than none.
+30 real Ohio-registered companies. `registry_id` is EMPTY for every entry —
+the SoS detail page was unreachable before and the site: operator is
+unsupported by the SERP zone. **Now fillable** from the OpenCorporates
+`meta:entity_number` item (OC's company number is the Ohio entity number —
+verified: Big Lots → `1215332` matches the SoS-format number).
 
 ## fixtures/pairs/ — differ replay pack
 
-Before/after envelope snapshots (contract shape exactly; `src/pairs.test.ts`
-schema-validates every file and asserts the intended delta):
-
-- `registry` — `officer:jonathan-ramsden:cfo` removed (CFO departure) and
-  `status:current` ALTERED Active→Cancelled (same key, new value).
-- `court` — `case:26CV002147` appears; `meta:current_through` rolls forward.
-- `layoffs` — `notice:WARN-2026-187` appears from an empty baseline.
-- `jobs` — `jobs:count` drops 75→12 and two `jobs:title:*` records vanish.
-- `domain` — only `home:hash` content_hash changes; whois fields identical.
-- `news` — one story under three outlet URLs: three `article:<sha1(url)>`
-  keys sharing one `headline_norm`, i.e. ONE new story for the differ, not
-  three.
+- `court` pair rewritten to CourtListener vocabulary: after adds
+  `insolvency:deb:1:24-bk-11885` (type `insolvency_filing`) — the differ now
+  sees the tier-1 signal appear.
+- `layoffs` pair retained as synthetic differ-semantics data only — it does
+  NOT imply live coverage; the source is unavailable.
+- `registry` pair unchanged (key vocabulary is stable across the source
+  swap: `status:current`, `officer:`, `filing:`).
 
 ## CLI — `npm run collect`
 
-`npm run collect -- --source <source> --company <name|registry_id|index>`
-prints the envelope JSON. **Replay is the default** (saved fixtures, zero
-credits — a careless run cannot spend money); `--live` opts in to real
-Bright Data fetches through `LiveFetcher` with a `.cache/` disk cache.
-`--dry-run` is an explicit spelling of the default. `--list` shows the
-`ohio-companies.json` universe with indexes.
-
-Replay caveat: fixtures are captures for specific companies (Battelle for
-news/jobs, Bath & Body Works for executives, authored HTML for unlocker
-sources), so replaying `--company "Dana Incorporated"` runs the full code
-path but the items describe the recorded evidence.
+Replay default unchanged. registry/court replay the real Big Lots captures
+(`--company "Big Lots, Inc."`); replaying other companies exercises the code
+path against Big-Lots evidence. `regulator`/`layoffs` return the honest
+`ok:false` in every mode — they never fetch.
 
 Shared context:
 
-- **Fetch layer.** `src/fetcher/live.ts` posts to
-  `https://api.brightdata.com/request` (`{zone, url, format: "raw"}`) and caches
-  every response by `zone | UTC day | url` in memory and, if `cacheDir` is set,
-  on disk. A same-day re-run costs zero credits. `src/fetcher/replay.ts` serves
-  the same `Fetcher` interface from `fixtures/` — the whole suite runs offline.
-- **SERP zone** (`serp_api1`) returns *parsed JSON*:
-  `{general, organic:[{title, link, description, rank, date?}], ...}`.
-  `parseSerp` in `src/util.ts` guards the 200-with-text-body case
-  ("This target URL isn't supported with SERP API..."), which is how a
-  wrong-zone call fails — it is NOT an HTTP error.
-- **Geo must be pinned in the URL** (`gl=us&hl=en`); a `country` field in the
-  request body is silently ignored (defaults drifted to Egypt/Argentina).
-- **Unlocker zone does not exist yet.** `registry`, `court`, `regulator`,
-  `layoffs`, `domain`, and the article-body half of `news`/`executives`/`jobs`
-  are built against saved fixtures and will work live the moment
-  `BRIGHTDATA_UNLOCKER_ZONE` is set — the code paths are identical.
-- **Blocked pages return HTTP 200** with a challenge body. `assertUnblocked`
-  in `src/util.ts` throws on captcha/denied markers before parsing; every
-  collector calls it.
-- **Empty is not an error.** An "ok" envelope with `items: []` means "we
-  checked, nothing there". `ok: false` means "we could not check".
-
-## registry — Ohio SoS business details
-
-- URL: `https://businesssearch.ohiosos.gov/?businessDetails/<registry_id>`
-  where `registry_id` is the entity number on the canonical company.
-- Selectors: `.entity-info dt/dd` pairs (Status etc.),
-  `.statutory-agent` (registered address), `.principals-table tbody tr`
-  (officers), `.filings-table a.f-doc[href*="filingDetails/<id>"]` (filing
-  ids live in the link, not the row), `.prior-names-list li`.
-- The site is an SPA; the Unlocker returns the rendered details pane.
-  Not-found entities render a `.no-results` page — treated as a legit empty.
-
-## court — Franklin County Common Pleas (fcdcfcjs.co.franklin.oh.us)
-
-- URL: `https://fcdcfcjs.co.franklin.oh.us/CaseInformationOnline/partySearch?name=<name>`
-  (party-name search, which is what counterparty monitoring needs).
-- Selectors: `.party-results tbody tr`, docket number from
-  `a.case-link[href*="caseNumber="]` (compact form `26CV002147` is the key).
-- **The portal lags real filings by 2–5 business days.** It states its own
-  currency date in `.current-through`; we emit it as item
-  `meta:current_through` so the system can honestly say "court records
-  current to <date>" instead of implying the docket is live. Even an empty
-  party search still reports the currency date.
-
-## regulator — Ohio eLicense + OFAC SDN (two unlocks, one envelope)
-
-- URLs: `https://elicense.ohio.gov/OH_VerifyLicense?searchType=entity&name=<name>`
-  and `https://sanctionssearch.ofac.treas.gov/Search.aspx?name=<name>`.
-- Selectors: `.license-results tbody tr`, `.actions-table tbody tr`
-  (enforcement actions), `.sdn-table tbody tr` (SDN matches).
-- **A failure in either sub-source fails the whole envelope.** An "ok"
-  snapshot that silently skipped OFAC would read as "no sanctions" — the
-  exact false-negative this product exists to prevent.
-- `sanctions:<list>:<match>` keys name the *matched party* (e.g. a fuzzy
-  `NORDVAL MATERIALS TRADING FZE` at score 83), not our company — same match,
-  same key, and the score diff is visible as an altered record.
-
-## layoffs — Ohio JFS WARN notices
-
-- URL: `https://jfs.ohio.gov/warn/warnnotices.stm` — single listing page
-  (current year) with one row per notice; **all Ohio filers share the page**,
-  so rows are filtered by canonical name + aliases.
-- Selectors: `.warn-table tbody tr`; notice id comes from the linked PDF
-  filename (`a.w-link[href]`), the portal's own stable identifier. Fallback
-  is `slug(company)-<notice-date digits>` — deterministic, never a row index.
-- Only the current year is listed; prior years are separate pages we do not
-  crawl (budget rule: the one page we need).
-
-## news — SERP, then unlock article bodies
-
-- Query: `"<canonical name>" news`; `organic[]` gives headline/outlet/date.
-- Then the top `MAX_ARTICLE_UNLOCKS = 3` links are unlocked for body text
-  (`article` → `main` → `p` fallback). Every SERP row becomes an item — the
-  row itself is an observation — with `unlocked: true/false` and
-  `unlock_error` when an article fails. **One blocked article is an
-  item-level gap, never an envelope failure.**
-- `key = article:<sha1(url)>`; `headline_norm` is set on every item so the
-  differ collapses syndicated reposts into one.
-- Healthy fixture (`fixtures/news/serp-healthy.json`) is a real live capture
-  via `tools/capture-serp.mjs`.
-
-## executives — SERP + press releases
-
-- Query: `"<name>" appoints OR names OR joins OR departs CEO OR CFO OR president`.
-- Move extraction runs on the **title first**, then title+description —
-  person/role regexes bleed across the boundary otherwise. Departure
-  patterns are tried before appointment ones.
-- `key = move:<person-slug>:<role-slug>:<yyyy-mm-dd|undated>`. Date comes
-  from the SERP `date` field; `undated` keeps the key stable when absent.
-- The top matching link is unlocked once for the press-release body; a
-  failure there is non-fatal (SERP row is still the record).
-
-### Bugs found by validating against a real SERP (2026-10-10)
-
-The hand-authored fixture was flattering; the real Bath & Body Works SERP
-broke the extractor three ways:
-
-1. **"Appoints X as Y" uncovered.** The dominant press-release phrasing
-   ("Bath & Body Works Appoints Daniel Heaf as Chief Executive Officer" —
-   the actual primary press release) matched no pattern; only `names?` was
-   handled. Now `(?:names?|appoints?|taps?)`.
-2. **PERSON swallowed connectives.** Under `/i`, `[A-Z]` matches lowercase,
-   so "Appoints Daniel Heaf **as** ..." captured person `"Daniel Heaf as"`,
-   and "Appoints Insider as Interim CFO" produced `"Insider as Interim"`.
-   PERSON's first letters are now case-locked with `(?-i:[A-Z])`.
-3. **Same move, two keys.** "Chief Executive Officer" and "CEO" minted
-   different move keys for the identical fact across outlets. Role is now
-   canonicalized for the key (`chief <x> officer` → `c?o` acronym); the raw
-   title stays in the item's `role` field. Result on the real SERP: four
-   outlets collapse to `move:daniel-heaf:ceo:undated`.
-4. Also hardened: the departure pattern's role group is now required —
-   "X steps down" with no role crashed on `undefined.trim()` and poisoned
-   the whole envelope; and `resigned`/`stepped down`/`has`/`will` variants
-   are covered.
-
-## jobs — SERP → careers page
-
-- Query: `"<name>" careers open positions`. The first careers-shaped link
-  (`career|jobs.|greenhouse|lever|workday|ashby|icims|bamboohr|jobvite`)
-  is unlocked; job titles read from `a.job-title`.
-- `jobs:count` carries `open_roles` and `basis`: `careers-page` when parsed
-  from the page, `serp-snippet` when inferred from text like
-  "75 X Jobs in Columbus" — weaker evidence, marked as such.
-- If SERP shows no careers link, **no URL is guessed** (speculative fetches
-  are banned); the snippet-count fallback or an empty item set is what you get.
-- Healthy SERP fixture is a real live capture; the careers HTML is authored.
-
-## domain — WHOIS + homepage fingerprint
-
-- URLs: `https://www.whois.com/whois/<domain>` then `https://<domain>/`.
-  Both must succeed or the envelope fails (same rule as `regulator`).
-- WHOIS is parsed from the raw `Label: value` block (`.whois-raw`/`pre`) —
-  registrar, registered, expires, updated, sorted name-server list.
-- `home:hash` is sha1 of the *raw body bytes*, so any byte-level change to
-  the homepage is a diff; `home:title` is the `<title>`. A parked page
-  yields a hash but no title item — that asymmetry is correct.
-- A company with no `domains[0]` fails honestly with
-  "canonical company has no domain".
+- **Fetch layer.** `LiveFetcher` posts to `api.brightdata.com/request`
+  (zone+URL+UTC-day cache, memory + optional disk) and now also exposes
+  `dataset()` for the Marketplace Dataset API. **x-brd-error headers are a
+  hard error** — see the top section.
+- **Unlocker zone exists now** (`BRIGHTDATA_UNLOCKER_ZONE` is set); the
+  earlier "no unlocker zone" caveat is stale.
+- **Empty is not an error.** `ok` with `items:[]` means checked-and-clear;
+  `ok:false` means could-not-check. Sources with no reachable substitute
+  return `ok:false` by design.
+- Live-call log this session: datasets/list (1), two wrong-endpoint probes
+  (2), four source probes — OC search, CourtListener API, opensanctions
+  (refused), elicense (refused) — OC company page, warntracker probe. ~9 of
+  the 10-call budget spent.
