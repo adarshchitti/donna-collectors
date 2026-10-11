@@ -15,7 +15,25 @@
 
 `brightdata zones` as of 2026-10-10 still lists only `serp_api1` — no Web
 Unlocker zone. Live-call log: 2 calls spent on the executives recapture
-(first returned HTTP 200 with a 0-byte body — transient; retry succeeded).
+(first returned HTTP 200 with a 0-byte body — transient; retry succeeded),
+5 probe calls for entity-number discovery (one empty body, retried).
+
+## Ohio company universe (ohio-companies.json)
+
+30 real Ohio-registered companies, weighted toward Franklin County because
+the court collector covers Franklin County Common Pleas, and toward names
+with real court/WARN history (Big Lots, Express, FirstEnergy-HB6, Diebold
+Nixdorf, Smucker, Dana...). `registry_id` is EMPTY for every entry — on
+purpose:
+
+- `site:` queries return 0 results through the SERP zone (operator appears
+  unsupported — verified on businesssearch.ohiosos.gov and opencorporates).
+- Entity numbers do not appear in ordinary SERP snippets either; they only
+  live on the SoS detail page itself (SPA, needs the missing unlocker zone)
+  or on aggregator detail pages (also need unlock).
+- Probes recorded under `fixtures/discovery/` for provenance. Fill
+  `registry_id` from the SoS details page once an unlocker zone exists —
+  a wrong entity number is worse than none.
 
 Shared context:
 

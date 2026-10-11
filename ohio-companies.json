@@ -1,0 +1,242 @@
+[
+  {
+    "canonical_name": "Big Lots, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["biglots.com"],
+    "aliases": ["BIG LOTS", "Big Lots Stores"],
+    "notes": "Columbus (Franklin Co.). Filed Chapter 11 Sept 2024; WARN notices and docket activity make it high-signal. registry_id unverified — no unlocker zone."
+  },
+  {
+    "canonical_name": "Express, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["express.com"],
+    "aliases": ["EXPRESS"],
+    "notes": "Columbus (Franklin Co.). Chapter 11 April 2024 + HQ WARN history. registry_id unverified."
+  },
+  {
+    "canonical_name": "Bath & Body Works, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["bathandbodyworks.com", "bbwinc.com"],
+    "aliases": ["BATH & BODY WORKS", "L BRANDS, INC.", "BBWI"],
+    "notes": "Columbus (Franklin Co.). CEO transition May 2025 — real exec-move signal, used for live SERP validation. registry_id unverified."
+  },
+  {
+    "canonical_name": "FirstEnergy Corp.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["firstenergycorp.com"],
+    "aliases": ["FIRSTENERGY"],
+    "notes": "Akron (Summit Co.). HB6 scandal — Ohio AG civil suit filed in Franklin County Common Pleas, so the court collector sees real dockets. registry_id unverified."
+  },
+  {
+    "canonical_name": "Diebold Nixdorf, Incorporated",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["dieboldnixdorf.com"],
+    "aliases": ["DIEBOLD NIXDORF", "Diebold, Incorporated"],
+    "notes": "North Canton (Stark Co.). Chapter 11 June 2023. registry_id unverified."
+  },
+  {
+    "canonical_name": "Safelite Group, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["safelite.com"],
+    "aliases": ["SAFELITE", "Safelite AutoGlass"],
+    "notes": "Columbus (Franklin Co.). Frequent party in consumer litigation. registry_id unverified."
+  },
+  {
+    "canonical_name": "Huntington Bancshares Incorporated",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["huntington.com"],
+    "aliases": ["HUNTINGTON BANCSHARES", "Huntington National Bank"],
+    "notes": "Columbus (Franklin Co.). registry_id unverified."
+  },
+  {
+    "canonical_name": "Cardinal Health, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["cardinalhealth.com"],
+    "aliases": ["CARDINAL HEALTH"],
+    "notes": "Dublin (Franklin Co.). Opioid-litigation and WARN history. registry_id unverified."
+  },
+  {
+    "canonical_name": "The Wendy's Company",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["wendys.com"],
+    "aliases": ["WENDY'S", "Wendy's International"],
+    "notes": "Dublin (Franklin Co.). registry_id unverified."
+  },
+  {
+    "canonical_name": "Abercrombie & Fitch Co.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["abercrombie.com"],
+    "aliases": ["ABERCROMBIE & FITCH"],
+    "notes": "New Albany (Franklin Co.). registry_id unverified."
+  },
+  {
+    "canonical_name": "Designer Brands Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["designerbrands.com", "dsw.com"],
+    "aliases": ["DSW", "Designer Shoe Warehouse"],
+    "notes": "Columbus (Franklin Co.). registry_id unverified."
+  },
+  {
+    "canonical_name": "Worthington Industries, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["worthingtonindustries.com"],
+    "aliases": ["WORTHINGTON INDUSTRIES"],
+    "notes": "Columbus (Franklin Co.). Spun off Worthington Steel 2023 — filing activity. registry_id unverified."
+  },
+  {
+    "canonical_name": "Worthington Steel, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["worthingtonsteel.com"],
+    "aliases": ["WORTHINGTON STEEL"],
+    "notes": "Columbus (Franklin Co.). New registrant 2023 — fresh filing history. registry_id unverified."
+  },
+  {
+    "canonical_name": "Nationwide Mutual Insurance Company",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["nationwide.com"],
+    "aliases": ["NATIONWIDE"],
+    "notes": "Columbus (Franklin Co.). registry_id unverified."
+  },
+  {
+    "canonical_name": "American Electric Power Company, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["aep.com"],
+    "aliases": ["AEP", "Ohio Power Company"],
+    "notes": "Columbus (Franklin Co.). Ohio Power Co. is the in-state utility subsidiary — WARN and regulatory signal. registry_id unverified."
+  },
+  {
+    "canonical_name": "White Castle Management Co.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["whitecastle.com"],
+    "aliases": ["White Castle", "White Castle System"],
+    "notes": "Columbus (Franklin Co.). registry_id unverified."
+  },
+  {
+    "canonical_name": "Grange Mutual Casualty Company",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["grangeinsurance.com"],
+    "aliases": ["Grange Insurance"],
+    "notes": "Columbus (Franklin Co.). registry_id unverified."
+  },
+  {
+    "canonical_name": "OhioHealth Corporation",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["ohiohealth.com"],
+    "aliases": ["OHIOHEALTH"],
+    "notes": "Columbus (Franklin Co.). Nonprofit corp; periodic WARN notices. registry_id unverified."
+  },
+  {
+    "canonical_name": "Mount Carmel Health System",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["mountcarmelhealth.com"],
+    "aliases": ["MOUNT CARMEL"],
+    "notes": "Columbus (Franklin Co.). Nonprofit corp. registry_id unverified."
+  },
+  {
+    "canonical_name": "Bob Evans Farms, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["bobevans.com"],
+    "aliases": ["BOB EVANS"],
+    "notes": "New Albany (Franklin Co.). registry_id unverified."
+  },
+  {
+    "canonical_name": "Hexion Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["hexion.com"],
+    "aliases": ["HEXION", "Momentive Specialty Chemicals"],
+    "notes": "Columbus (Franklin Co.). Prior bankruptcy + name change — prior_names signal. registry_id unverified."
+  },
+  {
+    "canonical_name": "Root, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["joinroot.com"],
+    "aliases": ["Root Insurance", "ROOT INSURANCE COMPANY"],
+    "notes": "Columbus (Franklin Co.). Insurtech; licensed-entity signal on eLicense. registry_id unverified."
+  },
+  {
+    "canonical_name": "OCLC, Inc.",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["oclc.org"],
+    "aliases": ["OCLC", "Online Computer Library Center"],
+    "notes": "Dublin (Franklin Co.). Nonprofit corp. registry_id unverified."
+  },
+  {
+    "canonical_name": "Battelle Memorial Institute",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["battelle.org"],
+    "aliases": ["BATTELLE"],
+    "notes": "Columbus (Franklin Co.). Nonprofit; already the fixture subject for news/jobs. registry_id unverified."
+  },
+  {
+    "canonical_name": "CoverMyMeds LLC",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["covermymeds.com"],
+    "aliases": ["COVERMYMEDS"],
+    "notes": "Columbus (Franklin Co.). McKesson subsidiary. registry_id unverified."
+  },
+  {
+    "canonical_name": "The J.M. Smucker Company",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["jmsmucker.com"],
+    "aliases": ["SMUCKER", "Smucker's", "J.M. Smucker"],
+    "notes": "Orrville (Wayne Co.). WARN notice history (plant closures). registry_id unverified."
+  },
+  {
+    "canonical_name": "The Timken Company",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["timken.com"],
+    "aliases": ["TIMKEN"],
+    "notes": "North Canton (Stark Co.). registry_id unverified."
+  },
+  {
+    "canonical_name": "The Goodyear Tire & Rubber Company",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["goodyear.com"],
+    "aliases": ["GOODYEAR"],
+    "notes": "Akron (Summit Co.). WARN history. registry_id unverified."
+  },
+  {
+    "canonical_name": "Marathon Petroleum Corporation",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["marathonpetroleum.com"],
+    "aliases": ["MARATHON PETROLEUM"],
+    "notes": "Findlay (Hancock Co.). WARN + regulator history. registry_id unverified."
+  },
+  {
+    "canonical_name": "Dana Incorporated",
+    "registry_id": "",
+    "jurisdiction": "US",
+    "domains": ["dana.com"],
+    "aliases": ["DANA", "Dana Holding Corporation"],
+    "notes": "Maumee (Lucas Co.). WARN notice history (drivetrain plants). registry_id unverified."
+  }
+]
