@@ -31,7 +31,37 @@ export interface LiveFetcherOptions {
   pollIntervalMs?: number;
   /** Give up on a dataset snapshot after this many progress polls. */
   maxPolls?: number;
+  /** Retries AFTER the first attempt, for transient refusals only. Default 2. */
+  maxRetries?: number;
+  /** Base backoff; attempt n waits backoffMs * 2^(n-1). Default 500ms. */
+  backoffMs?: number;
   now?: () => Date;
+}
+
+/**
+ * Bright Data refuses by policy and fails to render with the SAME shape: HTTP
+ * 200, often an empty body, reason in `x-brd-*` headers, `x-brd-status-code:
+ * 502` either way. They are not the same failure. A government domain stays
+ * blocked forever and must never be retried; `expect_element` ("waiting for
+ * selector \"#main\" failed") is their browser giving up on a page that
+ * renders on the next attempt -- observed live on a Google SERP, 2026-10-11.
+ *
+ * So the code and message do the sorting, not the status.
+ */
+const POLICY_SIGNS = [
+  'classified as government',
+  'blocked by bright data',
+  'usage policy',
+  'robots.txt',
+  'not available for immediate residential',
+  'kyc',
+];
+
+export function classifyBrdError(error: string, code: string | null): 'policy' | 'transient' {
+  const haystack = `${error} ${code ?? ''}`.toLowerCase();
+  return haystack.includes('policy_') || POLICY_SIGNS.some((s) => haystack.includes(s))
+    ? 'policy'
+    : 'transient';
 }
 
 export class LiveFetcher implements Fetcher {
@@ -43,6 +73,8 @@ export class LiveFetcher implements Fetcher {
   private apiBase: string;
   private pollIntervalMs: number;
   private maxPolls: number;
+  private maxRetries: number;
+  private backoffMs: number;
   private now: () => Date;
   private mem = new Map<string, FetchResult>();
 
@@ -55,6 +87,8 @@ export class LiveFetcher implements Fetcher {
     this.apiBase = opts.apiBase ?? 'https://api.brightdata.com';
     this.pollIntervalMs = opts.pollIntervalMs ?? 3_000;
     this.maxPolls = opts.maxPolls ?? 40;
+    this.maxRetries = opts.maxRetries ?? 2;
+    this.backoffMs = opts.backoffMs ?? 500;
     this.now = opts.now ?? (() => new Date());
   }
 
@@ -193,33 +227,51 @@ export class LiveFetcher implements Fetcher {
 
     if (!this.apiKey) throw new Error('BRIGHTDATA_API_KEY is not set');
 
-    const res = await fetch(this.endpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ zone, url: target, format: 'raw' }),
-    });
-    const body = await res.text();
+    let body = '';
+    for (let attempt = 0; ; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, this.backoffMs * 2 ** (attempt - 1)));
+      }
 
-    // Bright Data can REFUSE a target (e.g. government domains it will not
-    // fetch by policy) and still return HTTP 200 — often with a zero-byte
-    // body — carrying the real failure only in x-brd-* response headers.
-    // Treating that as an empty page is a silent false negative: every
-    // x-brd-error header is a hard fetch failure and must throw.
-    const brdError = res.headers.get('x-brd-error');
-    if (brdError) {
-      const code = res.headers.get('x-brd-error-code');
-      const upstream = res.headers.get('x-brd-status-code');
-      throw new Error(
-        `Bright Data refused ${resultUrl} — x-brd-error: "${brdError}"` +
+      const res = await fetch(this.endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ zone, url: target, format: 'raw' }),
+      });
+      body = await res.text();
+
+      // Bright Data can REFUSE a target (e.g. government domains it will not
+      // fetch by policy) and still return HTTP 200 — often with a zero-byte
+      // body — carrying the real failure only in x-brd-* response headers.
+      // Treating that as an empty page is a silent false negative, so every
+      // x-brd-error throws; but a render failure throws only once the retries
+      // are gone, and says which kind of failure it was.
+      const brdError = res.headers.get('x-brd-error');
+      if (brdError) {
+        const code = res.headers.get('x-brd-error-code');
+        const upstream = res.headers.get('x-brd-status-code');
+        const detail =
+          `x-brd-error: "${brdError}"` +
           (code || upstream
             ? ` (x-brd-error-code: ${code ?? '?'}, x-brd-status-code: ${upstream ?? '?'})`
-            : ''),
-      );
+            : '');
+        if (classifyBrdError(brdError, code) === 'policy') {
+          throw new Error(`Bright Data refused ${resultUrl} — ${detail}`);
+        }
+        if (attempt >= this.maxRetries) {
+          throw new Error(
+            `Bright Data could not fetch ${resultUrl} in ${attempt + 1} attempt(s) — ${detail}. ` +
+              'Their fetch failed; the target is not blocked by policy.',
+          );
+        }
+        continue;
+      }
+      if (!res.ok) throw new Error(`Bright Data request failed: HTTP ${res.status} ${body.slice(0, 200)}`);
+      break;
     }
-    if (!res.ok) throw new Error(`Bright Data request failed: HTTP ${res.status} ${body.slice(0, 200)}`);
 
     const result: FetchResult = {
       body,

@@ -1,6 +1,6 @@
 # Collector notes — per source
 
-## Validation status (updated 2026-10-10, source-swap pass)
+## Validation status (updated 2026-10-11, live-run fix pass)
 
 | source | fetch half | details |
 |---|---|---|
@@ -9,9 +9,9 @@
 | regulator | **UNAVAILABLE** | both sub-sources verified blocked live 2026-10-10 |
 | layoffs | **UNAVAILABLE** | jfs.ohio.gov blocked; no reachable non-gov WARN source |
 | news | SERP **validated against a real page** — earlier live capture | article-body half fixture-only, unvalidated |
-| executives | SERP **validated against a real page** — earlier live capture | PR body fixture-only, unvalidated |
+| executives | SERP **validated live 2026-10-11** (after the transient-refusal fix below; the same query had failed on `expect_element`) | PR body fixture-only, unvalidated |
 | jobs | SERP **validated against a real page** — earlier live capture | careers page fixture-only; **Indeed dataset path implemented, stub-tested, NOT yet validated live** |
-| domain | fixture-only | whois.com + homepage are non-government, expected to work under the new unlocker zone; not revalidated |
+| domain | **BLOCKED live 2026-10-11** — whois.com serves a captcha challenge (37KB page, detected by `util.block`) | the collector fails visibly rather than parsing the challenge; needs a different whois source (RDAP?) before it yields anything |
 
 ## Bright Data refuses government domains — the fix that made this visible
 
@@ -39,6 +39,48 @@ standard non-government OFAC mirror is *not* reachable either.
 Blocked domains are never fetched — the refusal is deterministic and a
 refused call still risks billing, so `regulator` and `layoffs` fail fast with
 `{ok:false}` before any request.
+
+## `x-brd-error` is TWO different failures — do not treat them alike
+
+A policy refusal and a render failure arrive in the same clothes: HTTP 200,
+reason only in `x-brd-*` headers, `x-brd-status-code: 502` either way. They
+need opposite handling, and conflating them cost a working source:
+
+- **policy** — `elicense.ohio.gov` → "classified as Government and blocked by
+  Bright Data"; `opensanctions.org` → `policy_20140` (robots/KYC). Permanent.
+  Retrying is pure waste and may still bill. Never retry.
+- **transient** — the executives SERP, live 2026-10-11:
+  `x-brd-error-code: expect_element`, "waiting for selector `#main` failed:
+  timeout 30000ms exceeded". Bright Data failed to RENDER an allowed page.
+  The same query succeeded on the next attempt.
+
+`classifyBrdError()` in `src/fetcher/live.ts` sorts them on the error code and
+message (never the status, which is 502 for both): anything matching
+`policy_*` or the government/robots/KYC wording is policy and throws at once;
+everything else is transient and goes through a bounded retry (2 retries,
+500ms exponential backoff) before throwing an error that says, in words, that
+it was *not* a policy refusal. Covered by `src/fetcher/live.test.ts`.
+
+Why it mattered: the pre-fix behaviour reported `expect_element` as
+"REFUSED BY POLICY (not an empty result)" in the credit report, which reads as
+"this source is unreachable, stop trying" about a 30-second timeout.
+
+## Credentials for `--live` — `.env`, and a preflight
+
+`--live` previously needed the key and both zones exported in the shell; with
+nothing set, a run failed per-source with "BRIGHTDATA_UNLOCKER_ZONE is not
+set" — six of the eight collectors unlock a page, so that is most of a pass
+failing on an unset variable while looking like a Bright Data outage.
+
+- `src/env.ts` reads `.env` (then `.env.local`), gitignored, shell wins.
+  See `.env.example`. Our zones are `web_unlocker1` / `serp_api1`.
+- `src/cli.ts` checks all three variables BEFORE the first fetch and exits 2
+  naming every missing one.
+
+**Cache rollover gotcha:** the `.cache/` key is zone + URL + **UTC day**. At
+UTC midnight every entry stops matching, so the first live run after 00:00 UTC
+refetches and rebills everything. That is by design (evidence should not be
+stale) but it means "it worked an hour ago" is not evidence it still will.
 
 ## New item types — for the rules table
 

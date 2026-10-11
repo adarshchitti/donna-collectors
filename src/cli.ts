@@ -21,6 +21,7 @@ import { collectors } from './index.js';
 import { SOURCES, type CanonicalCompany, type Source } from './contract.js';
 import { ReplayFetcher, serpKey, unlockerKey, type ReplayMap } from './fetcher/replay.js';
 import { LiveFetcher } from './fetcher/live.js';
+import { loadEnv, missingLiveEnv } from './env.js';
 import { slug } from './util.js';
 import { searchUrl as registrySearchUrl, companyUrl as registryCompanyUrl } from './collectors/registry.js';
 import { searchUrl as courtSearchUrl } from './collectors/court.js';
@@ -158,6 +159,19 @@ if (!record) {
   process.exit(2);
 }
 const company = toCanonical(record);
+
+if (args.live) {
+  loadEnv();
+  const missing = missingLiveEnv();
+  if (missing.length > 0) {
+    console.error(
+      `--live needs ${missing.join(', ')} -- set them in .env (see .env.example) or in the ` +
+        'shell. Zones are the names from the Bright Data console: web_unlocker1 / serp_api1. ' +
+        'Drop --live to replay the saved fixtures for free.',
+    );
+    process.exit(2);
+  }
+}
 
 const fetcher = args.live
   ? new LiveFetcher({ cacheDir: '.cache' })
