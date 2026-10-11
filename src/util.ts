@@ -98,8 +98,16 @@ const BLOCK_TITLES = [
 /**
  * A challenge page is SMALL. Real content pages run to hundreds of kilobytes;
  * an interstitial is a few. Used only to corroborate a weak marker, never alone.
+ *
+ * Measured, not guessed. At 40_000 this discarded 16 consecutive real
+ * homepages that came back 36-37KB with reCAPTCHA referenced in a script --
+ * the whole `domain` source read as blocked for a day. A Cloudflare "Just a
+ * moment" interstitial is 2-15KB, so 12_000 keeps the corroboration useful
+ * and puts an ordinary small homepage out of its reach. Real challenge pages
+ * above this size are still caught by their markers and titles, which is what
+ * actually identifies them; size was only ever the corroborating signal.
  */
-const CHALLENGE_MAX_BYTES = 40_000;
+const CHALLENGE_MAX_BYTES = 12_000;
 
 export class BlockedError extends Error {
   constructor(marker: string) {
@@ -164,7 +172,17 @@ export function parseSerp(body: string): SerpResult[] {
   try {
     json = JSON.parse(trimmed);
   } catch {
-    throw new Error('SERP response was not JSON');
+    // Say what actually arrived. "was not JSON" sent a day of SERP failures
+    // to the wrong diagnosis: the zone returns JSON correctly, and every one
+    // of those bodies was a transient timeout or refusal wearing a parse
+    // error. A collector that hides its own cause is the failure this product
+    // exists to report.
+    throw new Error(
+      `SERP response was not JSON: ${trimmed.length} bytes` +
+        (trimmed.length === 0
+          ? ' (empty body -- a refusal or a timeout, not a parse problem)'
+          : `, beginning ${JSON.stringify(trimmed.slice(0, 120))}`),
+    );
   }
   const organic = (json as { organic?: unknown }).organic;
   if (!Array.isArray(organic)) return [];

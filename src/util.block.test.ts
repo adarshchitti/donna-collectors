@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assertUnblocked, BlockedError } from './util.js';
+import { assertUnblocked, BlockedError, parseSerp } from './util.js';
 
 const big = (body: string) => body + 'x'.repeat(200_000);
 
@@ -50,5 +50,50 @@ describe('an actual challenge page is still caught', () => {
 
   it('still rejects an empty body', () => {
     expect(() => assertUnblocked('   ')).toThrow(/empty body/);
+  });
+});
+
+/**
+ * The 36KB homepage. Sixteen consecutive `domain` runs failed with
+ * "captcha on a 36303-byte page" while CHALLENGE_MAX_BYTES was 40_000: an
+ * ordinary homepage that references reCAPTCHA in a script, sitting just under
+ * the corroboration ceiling. The source read as blocked for a day, which is
+ * worse than a gap -- it is a gap that looks like a finding.
+ */
+describe('a real homepage near the old ceiling is not a challenge page', () => {
+  const homepage = (bytes: number) =>
+    '<html><head><title>Shop For Tires Online</title></head><body>' +
+    '<script src="https://www.google.com/recaptcha/api.js"></script>' +
+    'x'.repeat(bytes) +
+    '</body></html>';
+
+  for (const bytes of [12_000, 20_000, 36_303, 37_424]) {
+    it(`accepts a ${bytes}-byte homepage that merely mentions recaptcha`, () => {
+      expect(() => assertUnblocked(homepage(bytes))).not.toThrow();
+    });
+  }
+
+  it('still corroborates a weak marker on a genuinely small interstitial', () => {
+    expect(() => assertUnblocked('<html><body>captcha</body></html>'))
+      .toThrow(/captcha on a \d+-byte page/);
+  });
+});
+
+describe('parseSerp says what it actually received', () => {
+  it('reports an empty body as a refusal or timeout, not a parse problem', () => {
+    expect(() => parseSerp('')).toThrow(/empty body -- a refusal or a timeout/);
+  });
+
+  it('quotes the beginning of a non-JSON body, so the cause is in the record', () => {
+    expect(() => parseSerp('<html><body>Gateway Timeout</body></html>'))
+      .toThrow(/Gateway Timeout/);
+  });
+
+  it('still parses the JSON the SERP zone actually returns', () => {
+    const body = JSON.stringify({
+      general: { search_engine: 'google' },
+      organic: [{ title: 'Cardinal Health names CFO', link: 'https://example.com/a', rank: 1 }],
+    });
+    expect(parseSerp(body)).toHaveLength(1);
   });
 });
